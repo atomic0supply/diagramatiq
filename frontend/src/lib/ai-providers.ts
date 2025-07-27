@@ -278,6 +278,52 @@ export class OllamaProvider implements AIProvider {
   private buildSystemPrompt(context?: DiagramContext): string {
     const language = context?.language || 'mermaid';
     
+    if (language === 'mermaid') {
+      return `Generate ONLY valid Mermaid diagram code. Use simple, basic syntax.
+
+CRITICAL MERMAID RULES:
+1. Use EXACT syntax - no extra spaces or line breaks
+2. Each statement on ONE line only
+3. Use proper Mermaid operators: --> for flowchart, ->> for sequence, --|> for class
+4. Start with diagram type: flowchart TD, sequenceDiagram, or classDiagram
+5. Use simple node IDs: A, B, C, User, DB
+6. NO complex syntax, NO notes, NO styling
+7. Keep it simple and functional
+
+VALID EXAMPLES:
+
+Flowchart:
+flowchart TD
+    A[Start] --> B[Process]
+    B --> C[End]
+
+Sequence:
+sequenceDiagram
+    User->>API: Request
+    API->>DB: Query
+    DB-->>API: Data
+    API-->>User: Response
+
+Class:
+classDiagram
+    class Usuario
+    class Sesion
+    Usuario --|> Sesion
+
+${context?.currentCode ? `Current code:
+${context.currentCode}
+` : ''}
+
+RESPOND WITH:
+- Only the mermaid code in a code block
+- No explanations or extra text
+- Exact format as examples above
+
+\`\`\`mermaid
+[simple mermaid code]
+\`\`\``;
+    }
+    
     return `You are an expert diagram generator. Generate ${language} diagram code based on user requests.
 
 RULES:
@@ -296,19 +342,86 @@ Format:
   }
 
   private parseResponse(content: string): AIResponse {
-    // Extract code block
-    const codeMatch = content.match(/```(?:mermaid|plantuml|graphviz|dot)?\n([\s\S]*?)\n```/);
-    const code = codeMatch?.[1]?.trim() || '';
-
-    // Extract explanation
-    const explanationText = content.replace(/```(?:mermaid|plantuml|graphviz|dot)?\n[\s\S]*?\n```/, '').trim();
-
+    console.log('Raw Ollama response:', content);
+    
+    // Extract code block - try multiple patterns
+    let codeMatch = content.match(/```mermaid\n([\s\S]*?)\n```/);
+    if (!codeMatch) {
+      codeMatch = content.match(/```\n([\s\S]*?)\n```/);
+    }
+    if (!codeMatch) {
+      codeMatch = content.match(/```mermaid([\s\S]*?)```/);
+    }
+    if (!codeMatch) {
+      codeMatch = content.match(/```([\s\S]*?)```/);
+    }
+    
+    let code = codeMatch?.[1]?.trim() || '';
+    
+    // If no code block, try to find mermaid content directly
     if (!code) {
-      throw new AIError('No diagram code found in response', 'ollama');
+      const lines = content.split('\n');
+      const mermaidStart = lines.findIndex(line => 
+        line.trim().startsWith('flowchart') || 
+        line.trim().startsWith('sequenceDiagram') || 
+        line.trim().startsWith('classDiagram')
+      );
+      
+      if (mermaidStart >= 0) {
+        // Take from mermaid start to end or until empty line
+        const mermaidLines = [];
+        for (let i = mermaidStart; i < lines.length; i++) {
+          const currentLine = lines[i];
+          if (!currentLine) continue;
+          
+          const line = currentLine.trim();
+          if (line === '' && mermaidLines.length > 1) break;
+          if (line !== '') mermaidLines.push(currentLine);
+        }
+        code = mermaidLines.join('\n');
+      }
+    }
+    
+    // Clean up the code - MINIMAL cleaning to preserve syntax
+    if (code) {
+      code = code.trim();
+      
+      // Only remove completely invalid characters, preserve Mermaid syntax
+      code = code
+        .replace(/<<.*?>>/g, '') // Remove UML-style notes only
+        .replace(/^\s*note\s+.*$/gm, '') // Remove note lines
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\n');
+      
+      // Ensure proper diagram type prefix
+      if (!code.match(/^(flowchart|sequenceDiagram|classDiagram)/)) {
+        if (code.includes('->>') || code.includes('participant')) {
+          code = 'sequenceDiagram\n' + code;
+        } else if (code.includes('--|>') || code.includes('class ')) {
+          code = 'classDiagram\n' + code;
+        } else {
+          code = 'flowchart TD\n' + code;
+        }
+      }
     }
 
+    // Extract explanation
+    let explanationText = content
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/^(Here's|Here is|I've created|This is)/i, '')
+      .trim();
+
+    if (!code) {
+      throw new AIError('No valid diagram code found in response', 'ollama');
+    }
+
+    console.log('Parsed code:', code);
+    console.log('Parsed explanation:', explanationText);
+
     const response: AIResponse = {
-      code,
+      code
     };
 
     if (explanationText) {

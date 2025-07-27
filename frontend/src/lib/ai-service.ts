@@ -155,7 +155,7 @@ export function getAIService(): AIService {
     const config: AIConfig = {
       ollama: {
         baseUrl: process.env.NEXT_PUBLIC_OLLAMA_BASE_URL || 'http://localhost:11434',
-        model: process.env.NEXT_PUBLIC_OLLAMA_MODEL || 'codellama:7b',
+        model: process.env.NEXT_PUBLIC_OLLAMA_MODEL || 'llama3.2:3b',
       },
       fallbackToMock: true,
     };
