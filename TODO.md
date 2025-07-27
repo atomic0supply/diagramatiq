@@ -146,6 +146,15 @@
 - [ ] **Templates**: Pre-built diagram templates
 
 ### UI/UX Improvements
+- [x] **Diagram Management**: Rename and delete diagrams in ProjectSidebar ✅
+  - [x] Inline editing for diagram titles
+  - [x] Delete confirmation for diagrams
+  - [x] Integration with DiagramStorage and ProjectStore
+- [x] **Floating AI Assistant**: Converted AI chat to floating interface ✅
+  - [x] FloatingAIAssistant component with toggle functionality
+  - [x] Draggable floating window
+  - [x] Minimized state with floating dot
+  - [x] Updated MainLayout to two-panel design
 - [ ] **Command Palette**: Quick access to all functions
 - [ ] **Keyboard Shortcuts**: Power user shortcuts
 - [ ] **Themes**: Multiple color themes

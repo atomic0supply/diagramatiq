@@ -102,6 +102,11 @@ jspm_packages/
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
+./trae
+./vercel
+
+.env
+
 # Temporary folders
 tmp/
 temp/
