@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Configuración para Docker production builds
+  output: 'standalone',
+  
   experimental: {
     // App Router is now stable in Next.js 13+
   },

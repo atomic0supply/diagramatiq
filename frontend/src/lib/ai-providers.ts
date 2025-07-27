@@ -212,7 +212,7 @@ export class OllamaProvider implements AIProvider {
   private baseUrl: string;
   private model: string;
 
-  constructor(baseUrl = 'http://localhost:11434', model = 'codellama:7b') {
+  constructor(baseUrl = 'http://localhost:11434', model = 'llama3.2:3b') {
     this.baseUrl = baseUrl;
     this.model = model;
   }
