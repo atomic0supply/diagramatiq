@@ -93,7 +93,7 @@ npm run dev
 
 ```bash
 # Descargar modelo recomendado para diagramas
-docker exec -it ollama ollama pull codellama:7b
+docker exec -it ollama ollama pull llama3.2:3b
 # o un modelo más pequeño:
 docker exec -it ollama ollama pull llama3.2:3b
 ```
@@ -177,8 +177,8 @@ Modifica el código directamente en el editor Monaco con autocompletado y syntax
 
 ```bash
 # Modelos recomendados para diagramas
-ollama pull codellama:7b      # Mejor para código
-ollama pull llama3.2:3b       # Más rápido
+ollama pull llama3.2:3b       # Recomendado - Rápido y eficiente
+ollama pull codellama:7b      # Alternativa para código específico
 ollama pull deepseek-coder:6.7b # Excelente para arquitectura
 ```
 

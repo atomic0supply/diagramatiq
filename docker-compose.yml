@@ -6,12 +6,12 @@ services:
     image: ollama/ollama:latest
     container_name: diagramatiq-ollama
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - ollama-data:/root/.ollama
     environment:
       - OLLAMA_HOST=0.0.0.0
-      - OLLAMA_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - OLLAMA_ORIGINS=http://localhost:${FRONTEND_PORT:-3000},http://127.0.0.1:${FRONTEND_PORT:-3000}
     networks:
       - diagramatiq-network
     restart: unless-stopped
@@ -31,7 +31,7 @@ services:
       dockerfile: Dockerfile
     container_name: diagramatiq-backend
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
@@ -52,10 +52,10 @@ services:
       dockerfile: Dockerfile.dev
     container_name: diagramatiq-frontend
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      - NEXT_PUBLIC_OLLAMA_HOST=http://localhost:11434
-      - NEXT_PUBLIC_BACKEND_HOST=http://localhost:8080
+      - NEXT_PUBLIC_OLLAMA_HOST=http://localhost:${OLLAMA_PORT:-11434}
+      - NEXT_PUBLIC_BACKEND_HOST=http://localhost:${BACKEND_PORT:-8080}
       - NEXT_PUBLIC_PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
     volumes:
       - ./frontend:/app

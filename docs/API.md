@@ -178,7 +178,7 @@ Content-Type: application/json
 {
   "models": [
     {
-      "name": "codellama:7b",
+      "name": "llama3.2:3b",
       "size": 3825819519
     }
   ]
@@ -190,7 +190,7 @@ Content-Type: application/json
 **Request**:
 ```json
 {
-  "model": "codellama:7b",
+  "model": "llama3.2:3b",
   "messages": [
     {
       "role": "user",

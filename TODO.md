@@ -1,7 +1,21 @@
 # DiagramatIQ - TODO List
 
 ## ✅ COMPLETED - Recent Issues
+- [x] **Port Configuration** - Made all Docker ports configurable via .env variables (2024-01-20)
+  - [x] Updated docker-compose.yml to use FRONTEND_PORT, BACKEND_PORT, OLLAMA_PORT
+  - [x] Updated docker-compose.prod.yml with same port configuration
+  - [x] Added port variables to .env.example and .env.prod
+  - [x] Updated service URLs to use configurable ports
+  - [x] Updated OLLAMA_ORIGINS to use dynamic frontend port
 - [x] **GitHub Integration Setup** - Added issue templates, workflows, and management scripts (2024-01-20)
+- [x] **Dokploy Production Ready** - Complete production configuration for deployment (2024-01-20)
+  - [x] docker-compose.prod.yml for production environment
+  - [x] .env.prod with production environment variables
+  - [x] next.config.js updated with standalone output
+  - [x] Health checks for all services
+  - [x] Complete Dokploy deployment documentation
+  - [x] Production-ready Dockerfiles
+  - [x] Security and CORS configuration
 
 ## ✅ COMPLETED - MVP Phase 1
 
@@ -32,6 +46,16 @@
 - [x] **Dev Server**: Running successfully on http://localhost:3000
 - [x] **Hot Reload**: Working for all components
 - [x] **Error Handling**: Basic error boundaries and loading states
+- [x] **Docker Compose Setup**: Complete containerization for frontend and backend ✅
+  - [x] docker-compose.yml with profiles for different environments
+  - [x] Frontend Dockerfile.dev for development
+  - [x] Frontend Dockerfile for production
+  - [x] Backend Dockerfile with correct port configuration
+  - [x] .dockerignore files for optimized builds
+  - [x] .env.example with all required environment variables
+  - [x] docker.sh helper script for easy management
+  - [x] Complete Docker documentation in docs/docker.md
+  - [x] Validated configuration with docker-compose config
 
 ## 🚧 IN PROGRESS - MVP Phase 2
 
