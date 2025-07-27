@@ -1,0 +1,145 @@
+version: '3.8'
+
+services:
+  # 🐙 Kroki - Motor de renderizado para PlantUML, Graphviz, etc.
+  kroki:
+    image: yuzutech/kroki:0.23.0
+    container_name: diagramatiq-kroki
+    ports:
+      - "8000:8000"
+    environment:
+      - KROKI_PLANTUML_HOST=plantuml
+      - KROKI_GRAPHVIZ_HOST=graphviz
+      - KROKI_MERMAID_HOST=mermaid
+    depends_on:
+      - plantuml
+      - graphviz
+      - mermaid
+    networks:
+      - diagramatiq-network
+    restart: unless-stopped
+
+  # 🌱 PlantUML Service
+  plantuml:
+    image: yuzutech/kroki-plantuml:0.23.0
+    container_name: diagramatiq-plantuml
+    networks:
+      - diagramatiq-network
+    restart: unless-stopped
+
+  # 🕸️ Graphviz Service  
+  graphviz:
+    image: yuzutech/kroki-graphviz:0.23.0
+    container_name: diagramatiq-graphviz
+    networks:
+      - diagramatiq-network
+    restart: unless-stopped
+
+  # 🧜‍♀️ Mermaid Service (backup al cliente)
+  mermaid:
+    image: yuzutech/kroki-mermaid:0.23.0
+    container_name: diagramatiq-mermaid
+    networks:
+      - diagramatiq-network
+    restart: unless-stopped
+
+  # 🦙 Ollama - IA Local
+  ollama:
+    image: ollama/ollama:latest
+    container_name: diagramatiq-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+      # Opcional: GPU support
+      # - /usr/share/nvidia:/usr/share/nvidia:ro
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+    networks:
+      - diagramatiq-network
+    restart: unless-stopped
+    # Descomenta si tienes GPU NVIDIA
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # 🗃️ Redis - Cache para IA responses (opcional)
+  redis:
+    image: redis:7-alpine
+    container_name: diagramatiq-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - diagramatiq-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # 🚀 Backend API (FastAPI) - Opcional, para proxy y cache
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: diagramatiq-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - OLLAMA_HOST=http://ollama:11434
+      - KROKI_HOST=http://kroki:8000
+      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
+    depends_on:
+      - redis
+      - ollama
+      - kroki
+    networks:
+      - diagramatiq-network
+    restart: unless-stopped
+    # Monta el código para desarrollo
+    volumes:
+      - ./backend:/app
+    profiles:
+      - with-backend  # Solo se ejecuta con: docker-compose --profile with-backend up
+
+  # 🌐 Frontend (Next.js) - Desarrollo
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: diagramatiq-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_OLLAMA_HOST=http://localhost:11434
+      - NEXT_PUBLIC_KROKI_HOST=http://localhost:8000
+      - NEXT_PUBLIC_BACKEND_HOST=http://localhost:8080
+      - NEXT_PUBLIC_PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - diagramatiq-network
+    depends_on:
+      - kroki
+      - ollama
+    profiles:
+      - with-frontend  # Solo se ejecuta con: docker-compose --profile with-frontend up
+
+# 📦 Volúmenes persistentes
+volumes:
+  ollama-data:
+    driver: local
+  redis-data:
+    driver: local
+
+# 🌐 Red interna
+networks:
+  diagramatiq-network:
+    driver: bridge

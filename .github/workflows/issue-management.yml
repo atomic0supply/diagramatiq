@@ -1,0 +1,105 @@
+name: Issue Management
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  auto-label:
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
+    steps:
+      - name: Auto-label based on title
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = issue.title.toLowerCase();
+            const labels = [];
+            
+            // Auto-label based on title prefix
+            if (title.includes('[bug]')) {
+              labels.push('bug');
+            } else if (title.includes('[feature]')) {
+              labels.push('enhancement');
+            } else if (title.includes('[task]')) {
+              labels.push('task');
+            }
+            
+            // Auto-label based on content
+            const body = issue.body.toLowerCase();
+            if (body.includes('mvp phase 1')) {
+              labels.push('mvp-phase-1');
+            } else if (body.includes('mvp phase 2')) {
+              labels.push('mvp-phase-2');
+            } else if (body.includes('phase 3')) {
+              labels.push('phase-3');
+            }
+            
+            if (body.includes('critical')) {
+              labels.push('priority-critical');
+            } else if (body.includes('high')) {
+              labels.push('priority-high');
+            } else if (body.includes('medium')) {
+              labels.push('priority-medium');
+            } else if (body.includes('low')) {
+              labels.push('priority-low');
+            }
+            
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: labels
+              });
+            }
+
+  update-todo:
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Update TODO.md when issue is closed
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const issue = context.payload.issue;
+            
+            // Read current TODO.md
+            let todoContent = fs.readFileSync('TODO.md', 'utf8');
+            
+            // Add completed task to TODO.md
+            const completedSection = '## ✅ COMPLETED - Recent Issues';
+            const newTask = `- [x] **${issue.title}** - Closed issue #${issue.number}`;
+            
+            if (todoContent.includes(completedSection)) {
+              todoContent = todoContent.replace(
+                completedSection,
+                `${completedSection}\n${newTask}`
+              );
+            } else {
+              todoContent = `${completedSection}\n${newTask}\n\n${todoContent}`;
+            }
+            
+            // Write updated TODO.md
+            fs.writeFileSync('TODO.md', todoContent);
+            
+            // Commit changes
+            const { execSync } = require('child_process');
+            try {
+              execSync('git config user.name "GitHub Actions"');
+              execSync('git config user.email "actions@github.com"');
+              execSync('git add TODO.md');
+              execSync(`git commit -m "docs: update TODO.md - closed issue #${issue.number}"`);
+              execSync('git push');
+            } catch (error) {
+              console.log('No changes to commit or push failed:', error.message);
+            }
