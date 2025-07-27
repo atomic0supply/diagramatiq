@@ -3,6 +3,7 @@
 import React, { useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import { cn } from '@/lib/utils';
+import { AutoSaveSettings } from './AutoSaveSettings';
 
 interface CodeEditorProps {
   value: string;
@@ -21,32 +22,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   language,
   className,
 }) => {
-  const editorRef = useRef<any>(null);
-
-  const handleEditorDidMount = (editor: any, monaco: any) => {
-    editorRef.current = editor;
-    
-    // Configurar tema dark personalizado
-    monaco.editor.defineTheme('diagramatiq-dark', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [
-        { token: 'comment', foreground: '6A9955' },
-        { token: 'keyword', foreground: '569CD6' },
-        { token: 'string', foreground: 'CE9178' },
-        { token: 'number', foreground: 'B5CEA8' },
-      ],
-      colors: {
-        'editor.background': '#1F2937',
-        'editor.foreground': '#F3F4F6',
-        'editorLineNumber.foreground': '#6B7280',
-        'editor.selectionBackground': '#374151',
-        'editor.lineHighlightBackground': '#374151',
-      },
-    });
-    
-    monaco.editor.setTheme('diagramatiq-dark');
-  };
+  const editorRef = useRef(null);
 
   const handleEditorChange = (value: string | undefined) => {
     onChange(value || '');
@@ -86,28 +62,32 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           <span className="text-xs text-gray-400">
             {value.length} chars
           </span>
+          
+          {/* Auto-save Settings */}
+          <AutoSaveSettings />
         </div>
       </div>
 
       {/* Editor */}
-      <div className="flex-1">
+      <div className="flex-1 overflow-hidden">
         <Editor
           height="100%"
           language={getMonacoLanguage(language)}
           value={value}
           onChange={handleEditorChange}
-          onMount={handleEditorDidMount}
+          theme="vs-dark"
           options={{
             minimap: { enabled: false },
             fontSize: 14,
             lineNumbers: 'on',
-            roundedSelection: false,
-            scrollBeyondLastLine: false,
+            wordWrap: 'on',
             automaticLayout: true,
+            scrollBeyondLastLine: false,
+            renderWhitespace: 'selection',
             tabSize: 2,
             insertSpaces: true,
-            wordWrap: 'on',
-            theme: 'diagramatiq-dark',
+            detectIndentation: false,
+            trimAutoWhitespace: true,
             padding: { top: 16, bottom: 16 },
             suggestOnTriggerCharacters: true,
             quickSuggestions: true,

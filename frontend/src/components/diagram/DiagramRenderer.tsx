@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMermaid } from '@/hooks/useMermaid';
+import styles from './DiagramRenderer.module.css';
 
 interface DiagramRendererProps {
   code: string;
@@ -12,7 +14,7 @@ interface DiagramRendererProps {
 
 /**
  * Componente para renderizar diagramas
- * Soporta renderizado real de Mermaid con manejo de errores
+ * Soporta renderizado real de Mermaid con manejo de errores y zoom
  */
 export const DiagramRenderer: React.FC<DiagramRendererProps> = ({
   code,
@@ -24,14 +26,106 @@ export const DiagramRenderer: React.FC<DiagramRendererProps> = ({
   });
   
   const [lastRenderedCode, setLastRenderedCode] = useState<string>('');
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const diagramWrapperRef = useRef<HTMLDivElement>(null);
+
+  // Constantes para zoom
+  const MIN_ZOOM = 0.1;
+  const MAX_ZOOM = 5;
+  const ZOOM_STEP = 0.1;
 
   // Renderizar diagrama cuando cambie el código
   useEffect(() => {
     if (type === 'mermaid' && code && code !== lastRenderedCode) {
       renderDiagram(code);
       setLastRenderedCode(code);
+      // Reset zoom cuando se renderiza un nuevo diagrama
+      setZoomLevel(1);
+      setPanOffset({ x: 0, y: 0 });
     }
   }, [code, type, renderDiagram, lastRenderedCode]);
+
+  // Funciones de zoom
+  const handleZoomIn = useCallback(() => {
+    setZoomLevel(prev => Math.min(prev + ZOOM_STEP, MAX_ZOOM));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoomLevel(prev => Math.max(prev - ZOOM_STEP, MIN_ZOOM));
+  }, []);
+
+  const handleZoomReset = useCallback(() => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+  }, []);
+
+  // Manejo de zoom con rueda del mouse
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+    setZoomLevel(prev => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta)));
+  }, []);
+
+  // Manejo de pan (arrastrar)
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button === 0) { // Solo botón izquierdo
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+    }
+  }, [panOffset]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isDragging) {
+      setPanOffset({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  }, [isDragging, dragStart]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Cleanup de eventos
+  useEffect(() => {
+    const handleGlobalMouseUp = () => setIsDragging(false);
+    
+    // Atajos de teclado para zoom
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Solo activar si el foco está en el componente de diagrama
+      if (diagramWrapperRef.current && diagramWrapperRef.current.contains(document.activeElement)) {
+        if (e.ctrlKey || e.metaKey) {
+          switch (e.key) {
+            case '=':
+            case '+':
+              e.preventDefault();
+              handleZoomIn();
+              break;
+            case '-':
+              e.preventDefault();
+              handleZoomOut();
+              break;
+            case '0':
+              e.preventDefault();
+              handleZoomReset();
+              break;
+          }
+        }
+      }
+    };
+
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleZoomIn, handleZoomOut, handleZoomReset]);
 
   // Función para exportar SVG
   const handleExportSVG = () => {
@@ -109,6 +203,38 @@ export const DiagramRenderer: React.FC<DiagramRendererProps> = ({
               ERROR
             </span>
           )}
+          
+          {/* Zoom Controls */}
+          {type === 'mermaid' && code && !error && (
+            <div className={cn("flex items-center space-x-1 ml-4", styles.zoomControls)}>
+              <button
+                onClick={handleZoomOut}
+                className={cn("p-1 text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors", styles.zoomButton)}
+                title="Zoom Out"
+                disabled={zoomLevel <= MIN_ZOOM}
+              >
+                <ZoomOut className="h-3 w-3" />
+              </button>
+              <span className={cn("text-xs text-gray-400 min-w-[3rem] text-center", styles.zoomLevel)}>
+                {Math.round(zoomLevel * 100)}%
+              </span>
+              <button
+                onClick={handleZoomIn}
+                className={cn("p-1 text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors", styles.zoomButton)}
+                title="Zoom In"
+                disabled={zoomLevel >= MAX_ZOOM}
+              >
+                <ZoomIn className="h-3 w-3" />
+              </button>
+              <button
+                onClick={handleZoomReset}
+                className={cn("p-1 text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors", styles.zoomButton)}
+                title="Reset Zoom"
+              >
+                <RotateCcw className="h-3 w-3" />
+              </button>
+            </div>
+          )}
         </div>
         
         <div className="flex items-center space-x-2">
@@ -142,19 +268,62 @@ export const DiagramRenderer: React.FC<DiagramRendererProps> = ({
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-4 overflow-auto">
+      <div className="flex-1 overflow-hidden">
         {code ? (
           <>
             {type === 'mermaid' ? (
-              // Renderizado real de Mermaid
-              <div 
-                ref={containerRef}
-                className="h-full w-full flex items-center justify-center"
-                style={{ minHeight: '200px' }}
-              />
+              // Renderizado real de Mermaid con zoom y pan
+              <div className="relative h-full w-full">
+                <div 
+                  ref={diagramWrapperRef}
+                  className={cn(
+                    "h-full w-full overflow-hidden",
+                    styles.diagramWrapper,
+                    isDragging && styles.dragging
+                  )}
+                  onWheel={handleWheel}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  tabIndex={0}
+                  role="img"
+                  aria-label="Interactive diagram with zoom and pan controls"
+                >
+                  <div
+                    className={cn("h-full w-full flex items-center justify-center", styles.diagramContent)}
+                    style={{
+                      transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+                      transformOrigin: 'center center'
+                    }}
+                  >
+                    <div 
+                      ref={containerRef}
+                      className={cn("diagram-container", styles.diagramContainer)}
+                    />
+                  </div>
+                </div>
+                
+                {/* Loading Overlay */}
+                {isLoading && (
+                  <div className={cn("absolute inset-0 bg-gray-900/80 flex items-center justify-center z-10", styles.loadingOverlay)}>
+                    <div className="text-center">
+                      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                      <p className="text-sm text-gray-300">Rendering diagram...</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Zoom Instructions */}
+                {!isLoading && !error && code && (
+                  <div className="absolute bottom-4 right-4 text-xs text-gray-500 bg-gray-800/80 px-2 py-1 rounded backdrop-blur-sm">
+                    <p>Scroll to zoom • Drag to pan</p>
+                    <p className="text-gray-600">Ctrl/Cmd + +/- to zoom • Ctrl/Cmd + 0 to reset</p>
+                  </div>
+                )}
+              </div>
             ) : (
               // Placeholder para PlantUML y Graphviz
-              <div className="h-full flex items-center justify-center">
+              <div className="h-full flex items-center justify-center p-4">
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
                     <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,7 +347,7 @@ export const DiagramRenderer: React.FC<DiagramRendererProps> = ({
             )}
           </>
         ) : (
-          <div className="h-full flex items-center justify-center">
+          <div className="h-full flex items-center justify-center p-4">
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
                 <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

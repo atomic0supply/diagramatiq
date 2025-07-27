@@ -114,14 +114,18 @@
   - [x] Hook personalizado para operaciones storage
   - [x] Estado reactivo y sincronización
   - [x] Error handling y loading states
-- [ ] **Auto-save Integration**: Conectar editor con storage automático
-  - [ ] Debounced auto-save en CodeEditor
-  - [ ] Indicador visual de estado de guardado
-  - [ ] Recuperación de sesión al recargar
-- [ ] **Project Management UI**: Interface para gestión de proyectos
-  - [ ] Lista de proyectos en sidebar
-  - [ ] Creación/edición/eliminación de proyectos
-  - [ ] Navegación entre diagramas del proyecto
+- [x] **Auto-save Integration**: Conectar editor con storage automático ✅
+  - [x] Debounced auto-save en CodeEditor
+  - [x] Indicador visual de estado de guardado
+  - [x] Recuperación de sesión al recargar
+  - [x] AutoSaveSettings component para configuración
+  - [x] Integración con useEditorStore
+- [x] **Project Management UI**: Interface para gestión de proyectos ✅
+  - [x] Lista de proyectos en sidebar
+  - [x] Creación/edición/eliminación de proyectos
+  - [x] Navegación entre diagramas del proyecto
+  - [x] ProjectSidebar component completamente funcional
+  - [x] Integración con MainLayout
 - [ ] **Import/Export**: Backup and restore functionality
   - [ ] Exportación completa de datos
   - [ ] Importación con validación
@@ -245,8 +249,8 @@ El MVP estará listo cuando:
 - **AI Testing**: ✅ **COMPLETADO** - Verificación completa de integración AI con Ollama
 
 ### 🎯 Próximas Prioridades (Fase 3)
-1. **Auto-save Integration**: Conectar editor con storage automático
-2. **Project Management UI**: Interface para gestión de proyectos
+1. **Auto-save Integration**: ⚡ **NEXT PRIORITY** - Conectar editor con storage automático
+2. **Project Management UI**: ⚡ **NEXT PRIORITY** - Interface para gestión de proyectos
 3. **PlantUML/Graphviz**: Integración con Kroki para soporte completo
 4. **Testing Suite**: Implementar tests automatizados
 
