@@ -1,3 +1,4 @@
+# 🧠 DiagramatIQ - Development Docker Compose with Profiles
 version: '3.8'
 
 services:
@@ -15,14 +16,6 @@ services:
     networks:
       - diagramatiq-network
     restart: unless-stopped
-    # GPU support (opcional)
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
 
   # 🚀 Backend API (FastAPI) - Para desarrollo futuro
   backend:
@@ -43,7 +36,7 @@ services:
     volumes:
       - ./backend:/app
     profiles:
-      - with-backend  # Solo con: docker-compose --profile with-backend up
+      - with-backend  # Solo con: docker-compose -f docker-compose.dev.yml --profile with-backend up
 
   # 🌐 Frontend (Next.js) - Desarrollo
   frontend:
@@ -66,7 +59,7 @@ services:
     depends_on:
       - ollama
     profiles:
-      - with-frontend  # Solo con: docker-compose --profile with-frontend up
+      - with-frontend  # Solo con: docker-compose -f docker-compose.dev.yml --profile with-frontend up
 
 # 📦 Volúmenes persistentes
 volumes:
