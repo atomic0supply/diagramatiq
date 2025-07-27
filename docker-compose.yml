@@ -1,5 +1,4 @@
-# 🧠 DiagramatIQ - Development Docker Compose with Profiles
-version: '3.8'
+# 🧠 DiagramatIQ - Development Docker Compose (All Services)
 
 services:
   # 🦙 Ollama - IA Local (NECESARIO)
@@ -35,8 +34,6 @@ services:
     restart: unless-stopped
     volumes:
       - ./backend:/app
-    profiles:
-      - with-backend  # Solo con: docker-compose -f docker-compose.dev.yml --profile with-backend up
 
   # 🌐 Frontend (Next.js) - Desarrollo
   frontend:
@@ -58,8 +55,6 @@ services:
       - diagramatiq-network
     depends_on:
       - ollama
-    profiles:
-      - with-frontend  # Solo con: docker-compose -f docker-compose.dev.yml --profile with-frontend up
 
 # 📦 Volúmenes persistentes
 volumes:
